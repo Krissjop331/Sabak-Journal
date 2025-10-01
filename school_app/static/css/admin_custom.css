@@ -1,0 +1,107 @@
+body {
+	background-color: #f9fafb; /* Более светлый фон */
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Современный шрифт */
+}
+
+.module {
+	background-color: #ffffff; /* Белый фон для модулей */
+	border-radius: 10px; /* Закругленные углы */
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Мягкая тень */
+	padding: 25px; /* Большие отступы */
+	margin-bottom: 20px; /* Отступ снизу */
+}
+
+.module h1,
+.module h2,
+.module h3,
+.module h4 {
+	color: #1f2937; /* Темный цвет для заголовков */
+	font-weight: 600; /* Сделаем заголовки жирнее */
+}
+
+.module .form-row {
+	margin-bottom: 20px; /* Больше отступов между строками формы */
+}
+
+.module .form-row label {
+	font-size: 1rem; /* Более крупный шрифт для меток */
+	color: #374151; /* Темно-серый цвет для текста */
+}
+
+.module .form-row input,
+.module .form-row select,
+.module .form-row textarea {
+	border: 1px solid #e5e7eb; /* Легкая граница */
+	border-radius: 8px; /* Закругленные углы */
+	padding: 12px; /* Более крупные отступы внутри полей */
+	width: 100%; /* Полная ширина */
+	font-size: 1rem; /* Увеличиваем размер шрифта */
+	transition: border-color 0.3s ease; /* Плавный переход для фокуса */
+}
+
+.module .form-row input:focus,
+.module .form-row select:focus,
+.module .form-row textarea:focus {
+	border-color: #4f46e5; /* Синий цвет при фокусировке */
+	outline: none; /* Убираем стандартный контур */
+	box-shadow: 0 0 5px rgba(79, 70, 229, 0.5); /* Легкий светящийся эффект */
+}
+
+.module .button {
+	background-color: #4f46e5; /* Синий цвет для кнопок */
+	color: white; /* Белый текст */
+	border: none; /* Без рамки */
+	border-radius: 6px; /* Закругленные углы */
+	padding: 12px 20px; /* Отступы */
+	font-size: 1rem; /* Увеличим размер шрифта */
+	cursor: pointer; /* Курсор в виде указателя */
+	transition: background-color 0.3s ease; /* Плавный переход для фона */
+	margin-top: 10px; /* Отступ сверху */
+}
+
+.module .button:hover {
+	background-color: #4338ca; /* Темный синий при наведении */
+}
+
+.module .button:focus {
+	outline: none; /* Убираем стандартный контур при фокусировке */
+	box-shadow: 0 0 5px rgba(79, 70, 229, 0.7); /* Легкий светящийся эффект */
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 20px;
+}
+
+table th,
+table td {
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid #e5e7eb; /* Легкая линия для разделения строк */
+}
+
+table th {
+	background-color: #f3f4f6; /* Светлый фон для заголовков таблиц */
+	color: #4b5563; /* Темно-серый цвет для текста */
+}
+
+table tr:hover {
+	background-color: #f9fafb; /* Легкий фон при наведении */
+}
+
+@media (max-width: 768px) {
+	.module {
+		padding: 15px; /* Меньшие отступы на мобильных */
+	}
+
+	.module .form-row input,
+	.module .form-row select,
+	.module .form-row textarea {
+		padding: 10px; /* Уменьшаем отступы внутри полей */
+	}
+
+	.module .button {
+		width: 100%; /* Кнопки на всю ширину на мобильных */
+	}
+}

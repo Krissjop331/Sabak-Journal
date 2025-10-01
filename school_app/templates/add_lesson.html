@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить урок{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Заголовок -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">📚 Добавить урок</h1>
+                <p class="text-gray-600">Создайте урок из расписания или вручную</p>
+            </div>
+            <a href="{% url 'home' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                ← Назад
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Основная форма -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <form method="post" class="space-y-6" id="lessonForm">
+                        {% csrf_token %}
+
+                        <!-- Выбор типа урока -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                                Способ создания урока <span class="text-red-500">*</span>
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label class="relative flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200" id="fromScheduleOption">
+                                    <input type="radio" name="lesson_type" value="from_schedule" class="sr-only" onchange="toggleLessonType()">
+                                    <div class="flex items-center">
+                                        <div class="w-4 h-4 border-2 border-gray-300 rounded-full mr-3 flex items-center justify-center">
+                                            <div class="w-2 h-2 bg-blue-600 rounded-full hidden"></div>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-medium text-gray-900">📅 Из расписания</h4>
+                                            <p class="text-sm text-gray-500">Быстро, время подставится автоматически</p>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="relative flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200" id="manualOption">
+                                    <input type="radio" name="lesson_type" value="manual" class="sr-only" onchange="toggleLessonType()">
+                                    <div class="flex items-center">
+                                        <div class="w-4 h-4 border-2 border-gray-300 rounded-full mr-3 flex items-center justify-center">
+                                            <div class="w-2 h-2 bg-blue-600 rounded-full hidden"></div>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-medium text-gray-900">✏️ Вручную</h4>
+                                            <p class="text-sm text-gray-500">Полный контроль, можно без времени</p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Дата урока -->
+                        <div>
+                            <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
+                                Дата урока <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="date" id="date" required
+                                   min="{{ today|date:'Y-m-d' }}"
+                                   onchange="updateAvailableSchedules()"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <!-- БЛОК 1: Создание из расписания -->
+                        <div id="scheduleBlock" class="hidden">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <h4 class="font-medium text-blue-800 mb-2">📅 Выберите занятие из расписания</h4>
+                                <p class="text-sm text-blue-700">Время и данные будут подставлены автоматически</p>
+                            </div>
+
+                            <div id="availableSchedules" class="space-y-3">
+                                <!-- Здесь будут отображаться доступные занятия -->
+                                <p class="text-gray-500 text-center py-4">Выберите дату чтобы увидеть доступные занятия</p>
+                            </div>
+
+                            <div class="mt-4">
+                                <label for="classroom_schedule" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Аудитория (переопределить)
+                                </label>
+                                <input type="text" name="classroom" id="classroom_schedule"
+                                       placeholder="Оставьте пустым для использования из расписания"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- БЛОК 2: Ручное создание -->
+                        <div id="manualBlock" class="hidden space-y-4">
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                <h4 class="font-medium text-yellow-800 mb-2">✏️ Ручное создание урока</h4>
+                                <p class="text-sm text-yellow-700">Заполните данные вручную. Время необязательно.</p>
+                            </div>
+
+                            <!-- Предмет -->
+                            <div>
+                                <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Предмет <span class="text-red-500">*</span>
+                                </label>
+                                <select name="subject" id="subject"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Выберите предмет</option>
+                                    {% for subject in subjects %}
+                                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Группа -->
+                            <div>
+                                <label for="group" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Группа <span class="text-red-500">*</span>
+                                </label>
+                                <select name="group" id="group"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Выберите группу</option>
+                                    {% for group in groups %}
+                                    <option value="{{ group.id }}">{{ group.name }} (Курс {{ group.course }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Время (необязательно) -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="start_time" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Время начала
+                                    </label>
+                                    <input type="time" name="start_time" id="start_time"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Время окончания
+                                    </label>
+                                    <input type="time" name="end_time" id="end_time"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+
+                            <!-- Аудитория -->
+                            <div>
+                                <label for="classroom_manual" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Аудитория
+                                </label>
+                                <input type="text" name="classroom" id="classroom_manual"
+                                       placeholder="Например: 101, Актовый зал"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- Заметки (общее поле) -->
+                        <div>
+                            <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
+                                Заметки к уроку
+                            </label>
+                            <textarea name="notes" id="notes" rows="3"
+                                      placeholder="Дополнительная информация о уроке..."
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="flex justify-end pt-4">
+                            <button type="submit" id="submitBtn" disabled
+                                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition duration-200">
+                                ✅ Создать урок
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Боковая панель -->
+            <div>
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">📅 Ваше расписание</h3>
+
+                    {% if teacher_schedule %}
+                        <div class="space-y-3 max-h-96 overflow-y-auto">
+                            {% for schedule in teacher_schedule %}
+                            <div class="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500"
+                                 data-schedule-id="{{ schedule.id }}"
+                                 data-weekday="{{ schedule.weekday }}"
+                                 data-subject="{{ schedule.subject.name }}"
+                                 data-group="{{ schedule.group.name }}"
+                                 data-time="{{ schedule.get_time_range }}"
+                                 data-classroom="{{ schedule.classroom|default:'' }}">
+                                <div class="font-medium text-gray-900">{{ schedule.subject.name }}</div>
+                                <div class="text-sm text-gray-600">{{ schedule.group.name }}</div>
+                                <div class="text-sm text-gray-500">{{ schedule.get_weekday_display }} • {{ schedule.get_time_range }}</div>
+                                {% if schedule.classroom %}
+                                    <div class="text-xs text-gray-500">🏢 {{ schedule.classroom }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p class="text-sm">У вас нет расписания</p>
+                            <a href="{% url 'add_schedule' %}" class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block">
+                                Создать расписание
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Подсказки -->
+                <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-medium text-blue-800 mb-2">💡 Как это работает</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• <strong>Из расписания:</strong> выберите дату и готовое занятие</li>
+                        <li>• <strong>Вручную:</strong> создайте урок с нуля</li>
+                        <li>• Время можно не указывать для ручного создания</li>
+                        <li>• Автоматически создается посещаемость для всех студентов</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Данные расписания для JS
+const scheduleData = [
+    {% for schedule in teacher_schedule %}
+    {
+        id: {{ schedule.id }},
+        weekday: {{ schedule.weekday }},
+        subject: "{{ schedule.subject.name }}",
+        group: "{{ schedule.group.name }}",
+        time: "{{ schedule.get_time_range }}",
+        classroom: "{{ schedule.classroom|default:'' }}",
+        weekday_name: "{{ schedule.get_weekday_display }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+console.log('📅 Загружено расписаний:', scheduleData.length);
+
+function toggleLessonType() {
+    const scheduleRadio = document.querySelector('input[value="from_schedule"]');
+    const manualRadio = document.querySelector('input[value="manual"]');
+    const scheduleBlock = document.getElementById('scheduleBlock');
+    const manualBlock = document.getElementById('manualBlock');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Обновляем визуальное состояние радиокнопок
+    document.querySelectorAll('input[name="lesson_type"]').forEach(radio => {
+        const option = radio.closest('label');
+        const circle = option.querySelector('.w-2');
+
+        if (radio.checked) {
+            option.classList.add('border-blue-500', 'bg-blue-50');
+            option.classList.remove('border-gray-200');
+            circle.classList.remove('hidden');
+        } else {
+            option.classList.remove('border-blue-500', 'bg-blue-50');
+            option.classList.add('border-gray-200');
+            circle.classList.add('hidden');
+        }
+    });
+
+    if (scheduleRadio.checked) {
+        console.log('🔄 Переключено на создание из расписания');
+        scheduleBlock.classList.remove('hidden');
+        manualBlock.classList.add('hidden');
+        updateAvailableSchedules();
+
+        // Делаем поля ручного создания необязательными
+        document.getElementById('subject').removeAttribute('required');
+        document.getElementById('group').removeAttribute('required');
+
+        // Очищаем поля ручного создания
+        document.getElementById('classroom_manual').disabled = true;
+        document.getElementById('classroom_schedule').disabled = false;
+
+    } else if (manualRadio.checked) {
+        console.log('🔄 Переключено на ручное создание');
+        scheduleBlock.classList.add('hidden');
+        manualBlock.classList.remove('hidden');
+        submitBtn.disabled = false;
+
+        // Делаем поля ручного создания обязательными
+        document.getElementById('subject').setAttribute('required', 'required');
+        document.getElementById('group').setAttribute('required', 'required');
+
+        // Переключаем поля аудитории
+        document.getElementById('classroom_schedule').disabled = true;
+        document.getElementById('classroom_manual').disabled = false;
+    }
+}
+
+function updateAvailableSchedules() {
+    const dateInput = document.getElementById('date');
+    const schedulesContainer = document.getElementById('availableSchedules');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (!dateInput.value) {
+        schedulesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Выберите дату</p>';
+        submitBtn.disabled = true;
+        return;
+    }
+
+    // Определяем день недели
+    const date = new Date(dateInput.value);
+    const weekday = (date.getDay() + 6) % 7; // Конвертируем из JS в Python формат
+
+    console.log('📅 Выбранная дата:', dateInput.value, 'День недели:', weekday);
+
+    // Фильтруем расписания по дню недели
+    const availableSchedules = scheduleData.filter(schedule => schedule.weekday === weekday);
+
+    console.log('📋 Найдено расписаний для этого дня:', availableSchedules.length);
+
+    if (availableSchedules.length === 0) {
+        schedulesContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p class="text-sm">Нет занятий в расписании на выбранный день</p>
+                <p class="text-xs text-gray-400 mt-1">Попробуйте создать урок вручную</p>
+            </div>
+        `;
+        submitBtn.disabled = true;
+        return;
+    }
+
+    // Отображаем доступные занятия
+    let schedulesHTML = '<div class="space-y-3">';
+    availableSchedules.forEach(schedule => {
+        schedulesHTML += `
+            <label class="block p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200" data-schedule="${schedule.id}">
+                <input type="radio" name="schedule_id" value="${schedule.id}" class="sr-only" onchange="selectSchedule(this)">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h5 class="font-medium text-gray-900">${schedule.subject}</h5>
+                        <p class="text-sm text-gray-600">${schedule.group}</p>
+                        <p class="text-sm text-blue-600">${schedule.time}</p>
+                        ${schedule.classroom ? `<p class="text-xs text-gray-500">🏢 ${schedule.classroom}</p>` : ''}
+                    </div>
+                    <div class="w-4 h-4 border-2 border-gray-300 rounded-full flex items-center justify-center ml-3">
+                        <div class="w-2 h-2 bg-blue-600 rounded-full hidden"></div>
+                    </div>
+                </div>
+            </label>
+        `;
+    });
+    schedulesHTML += '</div>';
+
+    schedulesContainer.innerHTML = schedulesHTML;
+    submitBtn.disabled = true; // Ждем выбора расписания
+}
+
+function selectSchedule(radio) {
+    const submitBtn = document.getElementById('submitBtn');
+
+    console.log('✅ Выбрано расписание:', radio.value);
+
+    // Обновляем визуальное состояние
+    document.querySelectorAll('input[name="schedule_id"]').forEach(r => {
+        const label = r.closest('label');
+        const circle = label.querySelector('.w-2');
+
+        if (r.checked) {
+            label.classList.add('border-blue-500', 'bg-blue-50');
+            label.classList.remove('border-gray-200');
+            circle.classList.remove('hidden');
+        } else {
+            label.classList.remove('border-blue-500', 'bg-blue-50');
+            label.classList.add('border-gray-200');
+            circle.classList.add('hidden');
+        }
+    });
+
+    // Разрешаем отправку формы
+    submitBtn.disabled = false;
+}
+
+// Валидация формы
+document.getElementById('lessonForm').addEventListener('submit', function(e) {
+    const lessonType = document.querySelector('input[name="lesson_type"]:checked');
+    const date = document.getElementById('date').value;
+
+    console.log('📝 Отправка формы. Тип:', lessonType?.value, 'Дата:', date);
+
+    if (!lessonType) {
+        e.preventDefault();
+        alert('Выберите способ создания урока');
+        return false;
+    }
+
+    if (!date) {
+        e.preventDefault();
+        alert('Выберите дату урока');
+        return false;
+    }
+
+    if (lessonType.value === 'from_schedule') {
+        const scheduleId = document.querySelector('input[name="schedule_id"]:checked');
+        if (!scheduleId) {
+            e.preventDefault();
+            alert('Выберите занятие из расписания');
+            return false;
+        }
+        console.log('✅ Создание из расписания, ID:', scheduleId.value);
+    } else if (lessonType.value === 'manual') {
+        const subject = document.getElementById('subject').value;
+        const group = document.getElementById('group').value;
+
+        if (!subject || !group) {
+            e.preventDefault();
+            alert('Выберите предмет и группу');
+            return false;
+        }
+
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+
+        if (startTime && endTime && startTime >= endTime) {
+            e.preventDefault();
+            alert('Время окончания должно быть больше времени начала');
+            return false;
+        }
+
+        console.log('✅ Ручное создание. Предмет:', subject, 'Группа:', group);
+    }
+
+    console.log('🚀 Форма отправлена');
+    return true;
+});
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Инициализация формы');
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').value = today;
+
+    // Устанавливаем время по умолчанию для ручного создания
+    document.getElementById('start_time').value = '09:00';
+    document.getElementById('end_time').value = '10:30';
+
+    // По умолчанию выбираем создание из расписания
+    document.querySelector('input[value="from_schedule"]').checked = true;
+    toggleLessonType();
+
+    console.log('✅ Инициализация завершена');
+});
+</script>
+
+<style>
+.container {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Стили для радиокнопок */
+input[type="radio"]:checked + div .w-2 {
+    display: block !important;
+}
+
+/* Анимации для переходов */
+#scheduleBlock, #manualBlock {
+    transition: all 0.3s ease;
+}
+
+/* Отключенные поля */
+input:disabled, select:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+</style>
+{% endblock %}

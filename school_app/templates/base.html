@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		{% load static %}
+    {% csrf_token %}
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Личный кабинет</title>
+		<link rel="stylesheet" href="{% static 'css/admin_custom.css' %}" />
+		<link
+			href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+			rel="stylesheet"
+		/>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<style>
+			/* Дополнительные стили для анимации и интерактивных элементов */
+			.tab-link {
+				position: relative;
+				transition: all 0.3s ease;
+			}
+
+			.tab-link::after {
+				content: '';
+				position: absolute;
+				bottom: -2px;
+				left: 0;
+				width: 0;
+				height: 2px;
+				background-color: #3b82f6;
+				transition: width 0.3s ease;
+			}
+
+			.tab-link.active::after {
+				width: 100%;
+			}
+
+			.tab-link:hover::after {
+				width: 100%;
+			}
+
+			.animated-element {
+				animation: fadeIn 0.5s ease-in-out;
+			}
+
+			@keyframes fadeIn {
+				from {
+					opacity: 0;
+					transform: translateY(10px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			.hover-scale {
+				transition: transform 0.3s ease;
+			}
+
+			.hover-scale:hover {
+				transform: scale(1.05);
+			}
+
+			.image-container:hover .edit-icon {
+				opacity: 1;
+			}
+
+			.edit-icon {
+				opacity: 0;
+				transition: opacity 0.3s ease;
+			}
+		</style>
+	</head>
+	<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+		<header class="bg-blue-600 p-4 shadow-md">
+			<nav class="container mx-auto flex justify-between items-center">
+				<div class="text-white font-bold text-xl">Личный кабинет</div>
+				<ul class="flex space-x-4">
+					<li>
+						<a
+							href="{% url 'home' %}"
+							class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300"
+							>Главная</a
+						>
+            <li>
+              <a href="{% url 'schedule' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                📅 Расписание
+            </a>
+            </li>
+					</li>
+					{% if user.is_authenticated %}
+					<li>
+						<a
+							href="{% url 'logout' %}"
+							class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300"
+							>Выйти</a
+						>
+					</li>
+					{% else %}
+					<li>
+						<a
+							href="{% url 'login' %}"
+							class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300"
+							>Войти</a
+						>
+					</li>
+					{% endif %}
+				</ul>
+			</nav>
+		</header>
+
+		<main class="container mx-auto p-6 flex-grow animated-element">
+			{% block content %}{% endblock %}
+		</main>
+
+		<footer class="bg-blue-600 text-white text-center py-4 mt-auto">
+			<div class="container mx-auto">
+				<p>&copy; 2025 Личный кабинет</p>
+				<p class="text-sm mt-1">Все права защищены</p>
+			</div>
+		</footer>
+
+		<script>
+			// Функция для управления табами
+			function showTab(tabId) {
+				// Скрываем все панели табов
+				document.querySelectorAll('.tab-pane').forEach(pane => {
+					pane.classList.add('hidden')
+				})
+
+				// Удаляем активный класс со всех ссылок
+				document.querySelectorAll('.tab-link').forEach(link => {
+					link.classList.remove(
+						'active',
+						'text-blue-600',
+						'border-b-2',
+						'border-blue-600'
+					)
+					link.classList.add('text-gray-600')
+				})
+
+				// Показываем выбранную панель
+				const selectedPane = document.getElementById('tab-' + tabId)
+				if (selectedPane) {
+					selectedPane.classList.remove('hidden')
+				}
+
+				// Делаем выбранную ссылку активной
+				const selectedLink = document.querySelector(
+					`.tab-link[data-tab="${tabId}"]`
+				)
+				if (selectedLink) {
+					selectedLink.classList.add(
+						'active',
+						'text-blue-600',
+						'border-b-2',
+						'border-blue-600'
+					)
+					selectedLink.classList.remove('text-gray-600')
+				}
+			}
+
+			// Инициализация графиков для каждого предмета
+			function initCharts() {
+				document
+					.querySelectorAll('canvas[id$="_attendanceChart"]')
+					.forEach(canvas => {
+						const subject = canvas.id.split('_')[0]
+						const ctx = canvas.getContext('2d')
+
+						// Получаем данные о посещаемости и оценках из DOM
+						// В реальном приложении эти данные можно передать через data-атрибуты или API
+						const attendedCount = Math.floor(Math.random() * 20) + 10 // Пример данных
+						const missedCount = Math.floor(Math.random() * 10) // Пример данных
+
+						new Chart(ctx, {
+							type: 'doughnut',
+							data: {
+								labels: ['Посещено', 'Пропущено'],
+								datasets: [
+									{
+										label: 'Посещаемость',
+										data: [attendedCount, missedCount],
+										backgroundColor: [
+											'rgba(54, 162, 235, 0.7)',
+											'rgba(255, 99, 132, 0.7)',
+										],
+										borderColor: [
+											'rgba(54, 162, 235, 1)',
+											'rgba(255, 99, 132, 1)',
+										],
+										borderWidth: 1,
+									},
+								],
+							},
+							options: {
+								responsive: true,
+								plugins: {
+									legend: {
+										position: 'top',
+									},
+									title: {
+										display: true,
+										text: `Статистика по предмету "${subject}"`,
+									},
+									tooltip: {
+										callbacks: {
+											label: function (context) {
+												const total = context.dataset.data.reduce(
+													(a, b) => a + b,
+													0
+												)
+												const value = context.raw
+												const percentage =
+													((value / total) * 100).toFixed(1) + '%'
+												return `${context.label}: ${value} (${percentage})`
+											},
+										},
+									},
+								},
+								animation: {
+									animateScale: true,
+									animateRotate: true,
+								},
+							},
+						})
+					})
+			}
+
+			// Обработчики событий после загрузки DOM
+			document.addEventListener('DOMContentLoaded', function () {
+				// Инициализация табов
+				const tabLinks = document.querySelectorAll('.tab-link')
+
+				tabLinks.forEach(link => {
+					link.addEventListener('click', function (e) {
+						e.preventDefault()
+						const tabId = this.getAttribute('data-tab')
+						showTab(tabId)
+					})
+				})
+
+				// Если есть табы, активируем первый по умолчанию
+				if (tabLinks.length > 0) {
+					// Первый таб уже активирован через классы в шаблоне
+					initCharts()
+				}
+
+				// Анимация для элементов страницы
+				const elementsToAnimate = document.querySelectorAll(
+					'.child-statistics, .bg-white'
+				)
+				elementsToAnimate.forEach((el, index) => {
+					el.style.animationDelay = `${index * 0.1}s`
+					el.classList.add('animated-element')
+				})
+
+				// Анимация при наведении на изображение пользователя
+				const userImage = document.getElementById('userImage')
+				if (userImage) {
+					userImage.addEventListener('mouseenter', function () {
+						this.classList.add('ring-4', 'ring-blue-300')
+					})
+
+					userImage.addEventListener('mouseleave', function () {
+						this.classList.remove('ring-4', 'ring-blue-300')
+					})
+				}
+			})
+		</script>
+	</body>
+</html>

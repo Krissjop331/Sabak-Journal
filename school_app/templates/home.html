@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="space-y-6">
+    <h2 class="text-2xl font-semibold">
+        Добро пожаловать, {{ user.get_full_name|default:user.username }}!
+    </h2>
+
+    <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col md:flex-row items-start">
+      <div class="relative">
+        <img
+            src="{{ user.get_image_url }}"
+            alt="Изображение пользователя"
+            class="w-24 h-24 rounded-full border-2 border-gray-300 hover:border-blue-500 transition duration-300 object-cover"
+            id="userImage"
+            onerror="this.src='/static/images/default_image.png'"
+        />
+        <form
+            action="{% url 'update_user_image' %}"
+            method="POST"
+            enctype="multipart/form-data"
+            class="absolute top-0 left-0 w-full h-full"
+        >
+            {% csrf_token %}
+            <input
+                type="file"
+                name="image"
+                accept="image/*"
+                class="hidden"
+                id="imageInput"
+                onchange="handleImageChange(this)"
+            />
+            <label
+                for="imageInput"
+                class="absolute inset-0 cursor-pointer rounded-full bg-black bg-opacity-0 hover:bg-opacity-30 transition duration-300 flex items-center justify-center"
+                title="Нажмите для изменения фото"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white opacity-0 hover:opacity-100 transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+            </label>
+        </form>
+        <div class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+        </div>
+    </div>
+
+        <div class="ml-6 flex-1">
+            <h3 class="text-xl font-medium mb-4">Общая информация:</h3>
+            <ul>
+                <li><strong>Имя пользователя:</strong> {{ user.username }}</li>
+                <li><strong>ФИО:</strong> {{ user.get_full_name }}</li>
+                <li><strong>Email:</strong> {{ user.email }}</li>
+                {% if is_student %}
+                <li>
+                    <strong>Группа:</strong> {{ group.name }} ({{ group.course }} курс)
+                </li>
+                {% elif is_teacher %}
+                <div class="space-y-6">
+                    <!-- Панель преподавателя -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-medium mb-6">Панель преподавателя</h3>
+
+                        <!-- Быстрая статистика -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-blue-500 text-white mr-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm text-gray-500">Всего групп</div>
+                                        <div class="text-xl font-semibold">{{ groups|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                                <div class="flex items-center">
+                                    <div class="p -3 rounded-full bg-green-500 text-white mr-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm text-gray-500">Всего студентов</div>
+                                        <div class="text-xl font-semibold">
+                                            {% with count=0 %}
+                                                {% for group in groups %}
+                                                    {% with group_students=students_by_group|get_item:group.id %}
+                                                        {% with count=count|add:group_students|length %}
+                                                            {% if forloop.last %}{{ count }}{% endif %}
+                                                        {% endwith %}
+                                                    {% endwith %}
+                                                {% endfor %}
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-purple-500 text-white mr-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm text-gray-500">Сегодня</div>
+                                        <div class="text-xl font-semibold">{{ today|date:"d.m.Y" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Управление группами -->
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-lg font-medium">Мои группы</h4>
+                                <a href="{% url 'add_lesson' %}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    Добавить урок
+                                </a>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {% for group in groups %}
+                                <div class="bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+                                    <div class="p-4 border-b bg-gray-50 rounded-t-lg">
+                                        <div class="flex justify-between items-center">
+                                            <h5 class="font-medium text-lg">{{ group.name }} ({{ group.course }} курс)</h5>
+                                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">{{ students_by_group|get_item:group.id|length }} студентов</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-4">
+                                        <h6 class="font-medium text-sm text-gray-500 mb-2">Список студентов:</h6>
+                                        <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                                            {% for student in students_by_group|get_item:group.id %}
+                                            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md">
+                                                <div class="flex items-center">
+                                                    <img src="{{ student.user.image.url }}" alt="Фото студента" class="w-8 h-8 rounded-full mr-3 object-cover bg-gray -100" />
+                                                    <span>{{ student.user.get_full_name }}</span>
+                                                </div>
+                                                <a href="{% url 'edit_student_marks' student.id %}" class="text-sm text-blue-600 hover:text-blue-800 flex items-center transition duration-300">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                    </svg>
+                                                    Изменить
+                                                </a>
+                                            </div>
+                                            {% empty %}
+                                            <div class="text-gray-400 text-center py-4">В этой группе нет студентов</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    {% if is_student %}
+    <div class="bg-white p-6 rounded-lg shadow-lg mt-6">
+        <h3 class="text-xl font-medium mb-4">Статистика:</h3>
+        <div class="tabs">
+            <ul class="flex space-x-4 border-b mb-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                {% for subject in grades.keys %}
+                <li class="tab">
+                    <a href="#"
+                       class="tab-link px-4 py-2 block {% if forloop.first %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-blue-600{% endif %}"
+                       data-tab="{{ subject }}">{{ subject }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div class="tab-content">
+                {% for subject, records in grades.items %}
+                <div id="tab-{{ subject }}" class="tab-pane {% if not forloop.first %}hidden{% endif %}">
+                    <h4 class="font-medium text-lg mb-4">{{ subject }}</h4>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <!-- График -->
+                        <div class="w-full md:w-1/2">
+                            <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                                <canvas id="{{ subject }}_attendanceChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Таблица -->
+                        <div class="w-full md:w-1/2">
+                            <div class="bg-gray-50 p-4 rounded-lg shadow">
+                                <h5 class="font-medium mb-2">Детали:</h5>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[400px] text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left py-2">Дата</th>
+                                                <th class="text-left py-2">Оценка</th>
+                                                <th class="text-left py-2">Присутствие</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for record in records %}
+                                            <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                                                <td class="py-2">{{ record.lesson.date|date:"d.m.Y" }}</td>
+                                                <td class="py-2">{{ record.grade|default:"—" }}</td>
+                                                <td class="py-2">
+                                                    {% if record.attended %}
+                                                    <span class="text-green-600">Да</span>
+                                                    {% else %}
+                                                    <span class="text-red-600">Нет</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="py-4 text-center text-gray-500">Нет записей.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if is_parent %}
+    <div class="bg-white p-6 rounded-lg shadow-lg mt-6">
+        <h3 class="text-xl font-medium mb-4">Статистика детей :</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for stat in child_statistics %}
+            <div class="child-statistics p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div class="flex items-center mb-4">
+                    <img src="{{ stat.child.user.image.url }}" alt="Изображение ребенка" class="w-16 h-16 rounded-full border-2 border-gray-200" />
+                    <div class="ml-4">
+                        <h4 class="text-lg font-medium">{{ stat.child.user.get_full_name }}</h4>
+                        <p class="text-sm text-gray-600">Группа: {{ stat.child.group.name }} ({{ stat.child.group.course }} курс)</p>
+                    </div>
+                </div>
+                <p class="mb-2"><span class="font-medium">Успеваемость:</span> {{ stat.attendance_percentage|floatformat:1 }}%</p>
+                <div class="mt-4">
+                    <h5 class="font-medium mb-2">Посещаемость:</h5>
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%">
+                        <canvas id="attendanceChart_{{ stat.child.id }}" width="400" height="300"></canvas>
+                    </div>
+                    <script>
+                        const ctx = document.getElementById('attendanceChart_{{ stat.child.id }}').getContext('2d');
+                        const attendanceData = {
+                            labels: ['Посещено', 'Пропущено'],
+                            datasets: [{
+                                label: 'Посещаемость',
+                                data: [{{ stat.attendance_data.attended }}, {{ stat.attendance_data.missed }}],
+                                backgroundColor: [
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 99, 132, 0.7)',
+                                ],
+                                borderColor: [
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 99, 132, 1)',
+                                ],
+                                borderWidth: 1,
+                            }]
+                        };
+                        const attendanceChart = new Chart(ctx, {
+                            type: 'doughnut',
+                            data: attendanceData,
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Статистика посещаемости для {{ stat.child.user.get_full_name }}',
+                                    },
+                                },
+                            },
+                        });
+                    </script>
+                </div>
+
+                <!-- Таб для предметов -->
+                <div class="mt-4">
+                    <h5 class="font-medium mb-2">Предметы:</h5>
+                    <div class="tabs overflow-x-auto ">
+                        <ul class="flex space-x-4 border-b mb-4 whitespace-nowrap">
+                            {% for subject in stat.subject_data.keys %}
+                            <li class="tab">
+                                <a href="#" class="tab-link px-4 py-2 block {% if forloop.first %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-blue-600{% endif %}" data-tab="{{ subject }}">{{ subject }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <div class="tab-content">
+                            {% for subject, data in stat.subject_data.items %}
+                            <div id="tab-{{ subject }}" class="tab-pane {% if not forloop.first %}hidden{% endif %}">
+                                <h6 class="font-medium mb-2">Детали по предмету: {{ subject }}</h6>
+                                <div class="flex flex-col">
+                                    <div class="flex justify-between mb-1">
+                                        <span class="font-medium">Посещено:</span>
+                                        <span>{{ data.attended }}</span>
+                                    </div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="font-medium">Проп ущено:</span>
+                                        <span>{{ data.missed }}</span>
+                                    </div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="font-medium">Успеваемость:</span>
+                                        <span>{{ data.attendance_percentage|floatformat:1 }}%</span>
+                                    </div>
+                                </div>
+                                <table class="w-full mt-2">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-left py-2">Дата</th>
+                                            <th class="text-left py-2">Оценка</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for grade in data.grades %}
+                                        <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                                            <td class="py-2">{{ forloop.counter }}</td>
+                                            <td class="py-2">{{ grade|default:"—" }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="2" class="py-4 text-center text-gray-500">Нет записей.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+<script>
+  function handleImageChange(input) {
+      if (input.files && input.files[0]) {
+          const file = input.files[0];
+
+          // Проверяем размер файла (5MB максимум)
+          if (file.size > 5 * 1024 * 1024) {
+              alert('Файл слишком большой. Максимальный размер: 5MB');
+              input.value = '';
+              return;
+          }
+
+          // Проверяем тип файла
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+          if (!allowedTypes.includes(file.type)) {
+              alert('Недопустимый тип файла. Разрешены: JPG, PNG, GIF');
+              input.value = '';
+              return;
+          }
+
+          // Показываем превью
+          const reader = new FileReader();
+          reader.onload = function(e) {
+              document.getElementById('userImage').src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+
+          // Отправляем форму
+          input.form.submit();
+      }
+  }
+  </script>
+
+{% endblock %}
